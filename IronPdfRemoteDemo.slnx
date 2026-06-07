@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="IronPdfRemoteDemo.AppHost/IronPdfRemoteDemo.AppHost.csproj" />
+  <Project Path="IronPdfRemoteDemo.ServiceDefaults/IronPdfRemoteDemo.ServiceDefaults.csproj" />
+  <Project Path="Worker/Worker.csproj" />
+</Solution>
