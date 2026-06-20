@@ -19,15 +19,13 @@ void SetupIronPdf(ConfigurationManager configuration)
 {
     var ironPdfConfiguration = configuration.GetSection("IronPdf").Get<IronPdfConfiguration>();
     if (ironPdfConfiguration == null) return;
-    var connectionConfig = IronPdfConnectionConfiguration.RemoteServer(ironPdfConfiguration.Address);
+    var connectionConfig = IronPdfConnectionConfiguration.RemoteServer(ironPdfConfiguration.EngineUrl);
     Installation.ConnectToIronPdfHost(connectionConfig);
     Installation.LicenseKey = ironPdfConfiguration.LicenseKey;
 }
 
 internal record IronPdfConfiguration
 {
-    public required string EngineHost { get; init; }
-    public required string EnginePort { get; init; }
+    public required string EngineUrl { get; init; }
     public required string LicenseKey { get; init; }
-    public string Address =>  $"http://{EngineHost}:{EnginePort}";
 }
