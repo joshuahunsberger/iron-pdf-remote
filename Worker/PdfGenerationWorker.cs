@@ -7,7 +7,7 @@ public class PdfGenerationWorker(ILogger<PdfGenerationWorker> logger, IHostAppli
         var renderer = new ChromePdfRenderer();
         var pdf = renderer.RenderHtmlAsPdf("<h1>Hello World!</h1>");
         logger.LogInformation("PDF rendered");
-        pdf.SaveAs("ironpdf.pdf");
+        pdf.SaveAs("pdfOutput/ironpdf.pdf");
         logger.LogInformation("PDF saved");
         
         hostApplicationLifetime.StopApplication();
