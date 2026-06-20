@@ -1,6 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var ironPdfLicenseKey = builder.AddParameter("IronPdfLicenseKey");
+builder.AddAzureContainerAppEnvironment("aca");
+
+var ironPdfLicenseKey = builder.AddParameter("IronPdfLicenseKey", secret: true);
 
 var engine = builder.AddContainer("ironpdfengine", "ironsoftwareofficial/ironpdfengine", "2026.6.1")
     .WithEndpoint(targetPort: 33350, name: "grpc", scheme: "http");
