@@ -8,9 +8,9 @@ var engine = builder.AddContainer("ironpdfengine", "ironsoftwareofficial/ironpdf
 var grpcEndpoint = engine.GetEndpoint("grpc");
 
 builder.AddProject<Projects.Worker>("worker")
-    .WithEnvironment("IRONPDF_ENGINE_HOST", grpcEndpoint.Property(EndpointProperty.Host))
-    .WithEnvironment("IRONPDF_ENGINE_PORT", grpcEndpoint.Property(EndpointProperty.Port))
-    .WithEnvironment("IRONPDF_LICENSE_KEY", ironPdfLicenseKey)
+    .WithEnvironment("IronPdf__EngineHost", grpcEndpoint.Property(EndpointProperty.Host))
+    .WithEnvironment("IronPdf__EnginePort", grpcEndpoint.Property(EndpointProperty.Port))
+    .WithEnvironment("IronPdf__LicenseKey", ironPdfLicenseKey)
     .WaitFor(engine);
 
 builder.Build().Run();

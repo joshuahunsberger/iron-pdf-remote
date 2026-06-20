@@ -1,18 +1,30 @@
 using Worker;
 using IronPdf.GrpcLayer;
 
-var engineHost = Environment.GetEnvironmentVariable("IRONPDF_ENGINE_HOST") ?? "localhost";
-var enginePort = int.TryParse(Environment.GetEnvironmentVariable("IRONPDF_ENGINE_PORT"), out var p) ? p : 33350;
-var licenseKey = Environment.GetEnvironmentVariable("IRONPDF_LICENSE_KEY");
-
-var config = IronPdfConnectionConfiguration.RemoteServer($"http://{engineHost}:{enginePort}");
-
-Installation.ConnectToIronPdfHost(config);
-Installation.LicenseKey = licenseKey;
-
 var builder = Host.CreateApplicationBuilder(args);
+
+SetupIronPdf(builder.Configuration);
+
 builder.AddServiceDefaults();
 builder.Services.AddHostedService<PdfGenerationWorker>();
 
 var host = builder.Build();
 host.Run();
+return;
+
+void SetupIronPdf(ConfigurationManager configuration)
+{
+    var ironPdfConfiguration = configuration.GetSection("IronPdf").Get<IronPdfConfiguration>();
+    if (ironPdfConfiguration == null) return;
+    var connectionConfig = IronPdfConnectionConfiguration.RemoteServer(ironPdfConfiguration.Address);
+    Installation.ConnectToIronPdfHost(connectionConfig);
+    Installation.LicenseKey = ironPdfConfiguration.LicenseKey;
+}
+
+internal record IronPdfConfiguration
+{
+    public required string EngineHost { get; init; }
+    public required string EnginePort { get; init; }
+    public required string LicenseKey { get; init; }
+    public string Address =>  $"http://{EngineHost}:{EnginePort}";
+}
