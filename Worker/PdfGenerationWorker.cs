@@ -6,7 +6,7 @@ namespace Worker;
 public class PdfGenerationWorker(
     ILogger<PdfGenerationWorker> logger,
     IHostApplicationLifetime hostApplicationLifetime,
-    BlobContainerClient containerClient)
+    BlobServiceClient serviceClient)
     : BackgroundService
 {
     private static readonly ActivitySource ActivitySource = new("Worker");
@@ -22,6 +22,7 @@ public class PdfGenerationWorker(
             var pdf = await renderer.RenderHtmlAsPdfAsync($"<h1>Hello World!</h1><h3>Generated at {now:O}</h3>");
             logger.LogInformation("PDF rendered");
 
+            var containerClient = serviceClient.GetBlobContainerClient("pdf-data");
             await containerClient.CreateIfNotExistsAsync(cancellationToken: stoppingToken);
             var blobClient = containerClient.GetBlobClient("ironpdf.pdf");
 

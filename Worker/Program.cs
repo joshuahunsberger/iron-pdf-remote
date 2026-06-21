@@ -3,8 +3,7 @@ using IronPdf.GrpcLayer;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.AddAzureBlobContainerClient("blobs",
-    settings => settings.BlobContainerName = "pdfs");
+builder.AddAzureBlobServiceClient("blobs");
 
 SetupIronPdf(builder.Configuration);
 
