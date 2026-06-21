@@ -8,8 +8,6 @@ public class PdfGenerationWorker(
     BlobServiceClient serviceClient)
     : BackgroundService
 {
-    private static readonly ActivitySource ActivitySource = new("Worker");
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -23,27 +21,42 @@ public class PdfGenerationWorker(
 
     private async Task GeneratePdf(CancellationToken stoppingToken)
     {
-        using var activity = ActivitySource.StartActivity();
+        using var rootActivity = Instrumentation.StartActivity("GeneratePdf");
 
         try
         {
-            var renderer = new ChromePdfRenderer();
-            var now = DateTime.UtcNow;
-            var pdf = await renderer.RenderHtmlAsPdfAsync($"<h1>Hello World!</h1><h3>Generated at {now:O}</h3>");
-            logger.LogInformation("PDF rendered");
+            byte[] pdfData;
 
-            var containerClient = serviceClient.GetBlobContainerClient("pdf-data");
-            await containerClient.CreateIfNotExistsAsync(cancellationToken: stoppingToken);
-            var blobClient = containerClient.GetBlobClient("ironpdf.pdf");
+            using (var renderActivity = Instrumentation.StartActivity("RenderPdf"))
+            {
+                var renderer = new ChromePdfRenderer();
+                var now = DateTime.UtcNow;
+                using var pdf =
+                    await renderer.RenderHtmlAsPdfAsync($"<h1>Hello World!</h1><h3>Generated at {now:O}</h3>");
+                pdfData = pdf.BinaryData;
 
-            using var stream = new MemoryStream(pdf.BinaryData);
-            await blobClient.UploadAsync(stream, true, stoppingToken);
-            logger.LogInformation("PDF saved to Azure Blob Storage");
+                renderActivity?.SetTag("pdf.size_bytes", pdfData.Length);
+                logger.LogInformation("PDF rendered");
+            }
+
+            using (var uploadActivity = Instrumentation.StartActivity("UploadToBlobStorage"))
+            {
+                uploadActivity?.SetTag("blob.container", "pdf-data");
+                uploadActivity?.SetTag("blob.name", "ironpdf.pdf");
+
+                var containerClient = serviceClient.GetBlobContainerClient("pdf-data");
+                await containerClient.CreateIfNotExistsAsync(cancellationToken: stoppingToken);
+                var blobClient = containerClient.GetBlobClient("ironpdf.pdf");
+
+                using var stream = new MemoryStream(pdfData);
+                await blobClient.UploadAsync(stream, true, stoppingToken);
+                logger.LogInformation("PDF saved to Azure Blob Storage");
+            }
         }
         catch (Exception ex)
         {
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            activity?.AddException(ex);
+            rootActivity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            rootActivity?.AddException(ex);
             logger.LogError(ex, "An error occurred during PDF generation");
         }
     }
