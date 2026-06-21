@@ -17,7 +17,7 @@ return;
 void SetupIronPdf(ConfigurationManager configuration)
 {
     var ironPdfConfiguration = configuration.GetSection("IronPdf").Get<IronPdfConfiguration>();
-    if (ironPdfConfiguration == null) return;
+    if (ironPdfConfiguration == null || string.IsNullOrEmpty(ironPdfConfiguration.EngineUrl)) return;
     var connectionConfig = IronPdfConnectionConfiguration.RemoteServer(ironPdfConfiguration.EngineUrl);
     Installation.ConnectToIronPdfHost(connectionConfig);
     Installation.LicenseKey = ironPdfConfiguration.LicenseKey;
