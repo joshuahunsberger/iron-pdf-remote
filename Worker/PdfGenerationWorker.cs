@@ -5,13 +5,23 @@ namespace Worker;
 
 public class PdfGenerationWorker(
     ILogger<PdfGenerationWorker> logger,
-    IHostApplicationLifetime hostApplicationLifetime,
     BlobServiceClient serviceClient)
     : BackgroundService
 {
     private static readonly ActivitySource ActivitySource = new("Worker");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await GeneratePdf(stoppingToken);
+
+            logger.LogInformation("Waiting 5 minutes before generating the next PDF...");
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+    }
+
+    private async Task GeneratePdf(CancellationToken stoppingToken)
     {
         using var activity = ActivitySource.StartActivity();
 
@@ -35,11 +45,6 @@ public class PdfGenerationWorker(
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             activity?.AddException(ex);
             logger.LogError(ex, "An error occurred during PDF generation");
-            throw;
-        }
-        finally
-        {
-            hostApplicationLifetime.StopApplication();
         }
     }
 }
