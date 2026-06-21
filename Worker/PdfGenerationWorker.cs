@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Azure.Storage.Blobs;
 
 namespace Worker;
@@ -8,20 +9,36 @@ public class PdfGenerationWorker(
     BlobContainerClient containerClient)
     : BackgroundService
 {
+    private static readonly ActivitySource ActivitySource = new("Worker");
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var renderer = new ChromePdfRenderer();
-        var now = DateTime.UtcNow;
-        var pdf = await renderer.RenderHtmlAsPdfAsync($"<h1>Hello World!</h1><h3>Generated at {now:O}</h3>");
-        logger.LogInformation("PDF rendered");
+        using var activity = ActivitySource.StartActivity();
 
-        await containerClient.CreateIfNotExistsAsync(cancellationToken: stoppingToken);
-        var blobClient = containerClient.GetBlobClient("ironpdf.pdf");
+        try
+        {
+            var renderer = new ChromePdfRenderer();
+            var now = DateTime.UtcNow;
+            var pdf = await renderer.RenderHtmlAsPdfAsync($"<h1>Hello World!</h1><h3>Generated at {now:O}</h3>");
+            logger.LogInformation("PDF rendered");
 
-        using var stream = new MemoryStream(pdf.BinaryData);
-        await blobClient.UploadAsync(stream, true, stoppingToken);
-        logger.LogInformation("PDF saved to Azure Blob Storage");
+            await containerClient.CreateIfNotExistsAsync(cancellationToken: stoppingToken);
+            var blobClient = containerClient.GetBlobClient("ironpdf.pdf");
 
-        hostApplicationLifetime.StopApplication();
+            using var stream = new MemoryStream(pdf.BinaryData);
+            await blobClient.UploadAsync(stream, true, stoppingToken);
+            logger.LogInformation("PDF saved to Azure Blob Storage");
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.AddException(ex);
+            logger.LogError(ex, "An error occurred during PDF generation");
+            throw;
+        }
+        finally
+        {
+            hostApplicationLifetime.StopApplication();
+        }
     }
 }
