@@ -11,18 +11,22 @@ var storage = builder.AddAzureStorage("storage")
 // Use TCP scheme to force Azure Container Apps to use pure TCP proxying (transport: tcp).
 // This bypasses the Envoy HTTP/1.1 proxy and prevents gRPC protocol errors, while allowing cleartext HTTP/2.
 var engine = builder.AddContainer("ironpdfengine", "ironsoftwareofficial/ironpdfengine", "2026.6.1")
-    .WithEndpoint(targetPort: 33350, name: "grpc", scheme: "tcp")
+    // NOTE: Chromium requires significant CPU and memory. For production environments,
+    // uncomment the block below to explicitly request higher resource limits in Azure Container Apps.
+    /*
     .PublishAsAzureContainerApp((infrastructure, app) =>
     {
-        if (app.Template.Containers.Count > 0)
+        if (app.Template?.Containers?.Count > 0 && app.Template.Containers[0].Value != null)
         {
-            app.Template.Containers[0].Value?.Resources = new Azure.Provisioning.AppContainers.AppContainerResources
+            app.Template.Containers[0].Value.Resources = new Azure.Provisioning.AppContainers.AppContainerResources
             {
                 Cpu = 1.0,
                 Memory = "2Gi"
             };
         }
-    });
+    })
+    */
+    .WithEndpoint(targetPort: 33350, name: "grpc", scheme: "tcp");
 
 var grpcEndpoint = engine.GetEndpoint("grpc");
 
