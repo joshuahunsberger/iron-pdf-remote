@@ -26,13 +26,13 @@ var engine = builder.AddContainer("ironpdfengine", "ironsoftwareofficial/ironpdf
         }
     })
     */
-    .WithEndpoint(targetPort: 33350, name: "grpc", scheme: "tcp");
+    .WithEndpoint(targetPort: 33350, name: "grpc", scheme: "tcp")
+    .WithEnvironment("IRONPDF_ENGINE_LICENSE_KEY", ironPdfLicenseKey);
 
 var grpcEndpoint = engine.GetEndpoint("grpc");
 
 builder.AddProject<Projects.Worker>("worker")
     .WithEnvironment("IronPdf__EngineUrl", $"http://{grpcEndpoint.Property(EndpointProperty.Host)}:{grpcEndpoint.Property(EndpointProperty.Port)}")
-    .WithEnvironment("IronPdf__LicenseKey", ironPdfLicenseKey)
     .WithReference(storage)
     .WaitFor(engine);
 
