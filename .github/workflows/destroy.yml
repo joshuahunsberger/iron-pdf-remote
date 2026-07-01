@@ -38,6 +38,15 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Cache Aspire deployment state
+        uses: actions/cache@v4
+        with:
+          path: ~/.aspire/deployments
+          key: aspire-deploy-${{ hashFiles('**/IronPdfRemoteDemo.AppHost.csproj') }}-${{ github.run_id }}
+          restore-keys: |
+            aspire-deploy-${{ hashFiles('**/IronPdfRemoteDemo.AppHost.csproj') }}-
+            aspire-deploy-
+
       - name: Destroy with Aspire
         run: aspire destroy --apphost ./IronPdfRemoteDemo.AppHost/IronPdfRemoteDemo.AppHost.csproj --environment Production --yes --non-interactive
         env:
