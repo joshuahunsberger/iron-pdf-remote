@@ -54,3 +54,13 @@ jobs:
           Azure__Location: ${{ vars.AZURE_LOCATION || 'eastus2' }}
           Azure__ResourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           Parameters__IronPdfLicenseKey: ${{ secrets.IRON_PDF_LICENSE_KEY }}
+
+      - name: Delete Azure Resource Group if remaining
+        if: always()
+        run: |
+          if az group show --name "${{ vars.AZURE_RESOURCE_GROUP }}" >/dev/null 2>&1; then
+            echo "Resource group still exists. Deleting..."
+            az group delete --name "${{ vars.AZURE_RESOURCE_GROUP }}" --yes
+          else
+            echo "Resource group already removed."
+          fi
